@@ -3,22 +3,29 @@ package loqor.ait.core.tardis.control.impl;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import dev.pavatus.lib.data.CachedDirectedGlobalPos;
+
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
+import loqor.ait.core.AITSounds;
+import loqor.ait.core.blockentities.ConsoleBlockEntity;
 import loqor.ait.core.lock.LockedDimensionRegistry;
 import loqor.ait.core.tardis.Tardis;
 import loqor.ait.core.tardis.control.Control;
 import loqor.ait.core.tardis.handler.travel.TravelHandler;
 import loqor.ait.core.tardis.util.AsyncLocatorUtil;
 import loqor.ait.core.util.WorldUtil;
-import loqor.ait.data.DirectedGlobalPos;
+import loqor.ait.data.schema.console.variant.renaissance.*;
 
 public class DimensionControl extends Control {
+
+    private SoundEvent soundEvent = AITSounds.DIMENSION;
 
     public DimensionControl() {
         super("dimension");
@@ -32,7 +39,16 @@ public class DimensionControl extends Control {
         }
 
         TravelHandler travel = tardis.travel();
-        DirectedGlobalPos.Cached dest = travel.destination();
+        CachedDirectedGlobalPos dest = travel.destination();
+
+
+        if (world.getBlockEntity(console) instanceof ConsoleBlockEntity consoleBlockEntity) {
+            if (isRenaissanceVariant(consoleBlockEntity)) {
+                this.soundEvent = AITSounds.RENAISSANCE_DIMENSION_ALT;
+            } else {
+                this.soundEvent = AITSounds.DIMENSION;
+            }
+        }
 
         CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
             List<ServerWorld> dims = WorldUtil.getOpenWorlds();
@@ -71,5 +87,18 @@ public class DimensionControl extends Control {
 
         current -= 1;
         return current < 0 ? lastIndex : current;
+    }
+
+    @Override
+    public SoundEvent getSound() {
+        return this.soundEvent;
+    }
+
+    private boolean isRenaissanceVariant(ConsoleBlockEntity consoleBlockEntity) {
+        return consoleBlockEntity.getVariant() instanceof RenaissanceTokamakVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceIndustriousVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceIdentityVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceFireVariant;
     }
 }

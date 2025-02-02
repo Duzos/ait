@@ -1,19 +1,23 @@
 package loqor.ait.core.tardis.control.impl;
 
-import io.wispforest.owo.ops.WorldOps;
+import dev.pavatus.lib.data.CachedDirectedGlobalPos;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
+import loqor.ait.core.AITBlocks;
 import loqor.ait.core.AITSounds;
+import loqor.ait.core.blockentities.ConsoleBlockEntity;
+import loqor.ait.core.engine.SubSystem;
 import loqor.ait.core.tardis.Tardis;
 import loqor.ait.core.tardis.control.Control;
-import loqor.ait.data.DirectedGlobalPos;
+import loqor.ait.data.schema.console.variant.renaissance.*;
 
 public class AntiGravsControl extends Control {
+
+    private SoundEvent soundEvent = AITSounds.ANTI_GRAVS;
 
     public AntiGravsControl() {
         super("antigravs");
@@ -26,20 +30,39 @@ public class AntiGravsControl extends Control {
             return false;
         }
 
-        tardis.travel().antigravs().flatMap(value -> !value);
+        boolean isRenaissance = false;
+        if (world.getBlockEntity(console) instanceof ConsoleBlockEntity consoleBlockEntity) {
+            isRenaissance = isRenaissanceVariant(consoleBlockEntity);
+        }
 
-        DirectedGlobalPos.Cached globalPos = tardis.travel().position();
-        World targetWorld = globalPos.getWorld();
+        this.soundEvent = isRenaissance ? AITSounds.RENAISSANCE_ANTI_GRAV_ALT : AITSounds.ANTI_GRAVS;
+
+        tardis.travel().antigravs().toggle();
+
+        CachedDirectedGlobalPos globalPos = tardis.travel().position();
+        ServerWorld targetWorld = globalPos.getWorld();
         BlockPos pos = globalPos.getPos();
 
-        WorldOps.updateIfOnServer(targetWorld, pos);
-        world.scheduleBlockTick(pos, targetWorld.getBlockState(pos).getBlock(), 2);
-
+        targetWorld.getChunkManager().markForUpdate(pos);
+        world.scheduleBlockTick(pos, AITBlocks.EXTERIOR_BLOCK, 2);
         return true;
     }
 
     @Override
     public SoundEvent getSound() {
-        return AITSounds.HANDBRAKE_LEVER_PULL;
+        return this.soundEvent;
+    }
+
+    @Override
+    protected SubSystem.IdLike requiredSubSystem() {
+        return SubSystem.Id.GRAVITATIONAL;
+    }
+
+    private boolean isRenaissanceVariant(ConsoleBlockEntity consoleBlockEntity) {
+        return consoleBlockEntity.getVariant() instanceof RenaissanceTokamakVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceIndustriousVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceIdentityVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceFireVariant;
     }
 }

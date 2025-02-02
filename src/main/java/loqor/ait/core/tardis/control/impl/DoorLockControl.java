@@ -1,17 +1,20 @@
 package loqor.ait.core.tardis.control.impl;
 
-import static loqor.ait.core.tardis.handler.DoorHandler.toggleLock;
-
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 
+import loqor.ait.core.AITSounds;
+import loqor.ait.core.blockentities.ConsoleBlockEntity;
 import loqor.ait.core.tardis.Tardis;
 import loqor.ait.core.tardis.control.Control;
+import loqor.ait.data.schema.console.variant.renaissance.*;
 
 public class DoorLockControl extends Control {
+
+    private SoundEvent soundEvent = AITSounds.DOOR_LOCK;
+
     public DoorLockControl() {
         super("door_lock");
     }
@@ -23,12 +26,27 @@ public class DoorLockControl extends Control {
             return false;
         }
 
-        toggleLock(tardis, player);
+        boolean isRenaissance = false;
+        if (world.getBlockEntity(console) instanceof ConsoleBlockEntity consoleBlockEntity) {
+            isRenaissance = isRenaissanceVariant(consoleBlockEntity);
+        }
+
+        this.soundEvent = isRenaissance ? AITSounds.RENAISSANCE_LOCK_ALT : AITSounds.DOOR_LOCK;
+
+        tardis.door().interactToggleLock(player);
         return true;
     }
 
     @Override
     public SoundEvent getSound() {
-        return SoundEvents.BLOCK_LEVER_CLICK;
+        return this.soundEvent;
+    }
+
+    private boolean isRenaissanceVariant(ConsoleBlockEntity consoleBlockEntity) {
+        return consoleBlockEntity.getVariant() instanceof RenaissanceTokamakVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceIndustriousVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceIdentityVariant ||
+                consoleBlockEntity.getVariant() instanceof RenaissanceFireVariant;
     }
 }

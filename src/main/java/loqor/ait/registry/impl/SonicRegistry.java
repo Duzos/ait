@@ -4,15 +4,17 @@ import static loqor.ait.AITMod.LOGGER;
 
 import java.util.function.Consumer;
 
+import dev.pavatus.lib.register.unlockable.UnlockableRegistry;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 
 import loqor.ait.AITMod;
-import loqor.ait.client.AITModClient;
 import loqor.ait.data.datapack.DatapackSonic;
 import loqor.ait.data.schema.sonic.BuiltinSonic;
 import loqor.ait.data.schema.sonic.SonicSchema;
-import loqor.ait.registry.unlockable.UnlockableRegistry;
 
 public class SonicRegistry extends UnlockableRegistry<SonicSchema> {
 
@@ -30,13 +32,19 @@ public class SonicRegistry extends UnlockableRegistry<SonicSchema> {
     @Override
     public void readFromServer(PacketByteBuf buf) {
         super.readFromServer(buf);
-        AITModClient.sonicModelPredicate();
+        //AITModClient.sonicModelPredicate();
     }
 
     @Override
     public void onClientInit() {
         this.defaults();
         super.onClientInit();
+    }
+
+    @Override
+    public void onCommonInit() {
+        super.onCommonInit();
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(this);
     }
 
     @Override
@@ -50,6 +58,8 @@ public class SonicRegistry extends UnlockableRegistry<SonicSchema> {
         register(BuiltinSonic.create("renaissance"));
         register(BuiltinSonic.create("crystalline"));
         register(BuiltinSonic.create("song"));
+        register(BuiltinSonic.create("singularity"));
+        register(BuiltinSonic.create("candy_cane"));
     }
 
     public static SonicRegistry getInstance() {
@@ -68,7 +78,11 @@ public class SonicRegistry extends UnlockableRegistry<SonicSchema> {
             SonicSchema.Models models = schema.models();
             models.load(consumer);
 
-            LOGGER.info("Loading sonic '" + schema.id() + "' with models: " + models);
+            LOGGER.debug("Loading sonic '{}' with models: {}", schema.id(), models);
         }
     }
+
+
+
+
 }
